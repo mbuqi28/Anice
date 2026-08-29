@@ -127,6 +127,10 @@ fun EmbedPlayer(
                 webView.loadUrl(url)
             }
         },
+        onRelease = { webView ->
+            webView.stopLoading()
+            webView.destroy()
+        },
         modifier = modifier
     )
 }

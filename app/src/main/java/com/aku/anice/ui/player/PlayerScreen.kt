@@ -103,6 +103,15 @@ fun PlayerScreen(
                     viewModel.updatePlaybackStatus(isPlaying)
                     if (!isPlaying) resetTimer()
                 }
+
+                override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                    android.util.Log.e("Player", "Error: ${error.message}")
+                    if (isDirectVideo) {
+                        // Jika native gagal, coba fallback ke Embed/WebView
+                        isDirectVideo = false
+                        isControllerVisible = true
+                    }
+                }
             })
         }
     }
@@ -115,27 +124,52 @@ fun PlayerScreen(
         if (stream != null) {
             isDirectVideo = true
             
-            // Gabungkan header default dengan header dari extractor
+            // Konfigurasi Header lengkap (Mobile UA untuk sinkronisasi cookie/platform)
+            val mobileUserAgent = "Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+            
             val allHeaders = mutableMapOf(
-                "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                "User-Agent" to mobileUserAgent,
                 "Accept" to "*/*",
                 "Accept-Language" to "en-US,en;q=0.9",
-                "Connection" to "keep-alive"
+                "sec-ch-ua-mobile" to "?1",
+                "sec-ch-ua-platform" to "\"Android\""
             )
+            
+            // Tambahkan Cookie dari CookieManager (Sangat penting untuk Dailymotion/OK.ru)
+            val cookie = android.webkit.CookieManager.getInstance().getCookie(stream.url)
+            if (!cookie.isNullOrEmpty()) {
+                allHeaders["Cookie"] = cookie
+            }
+            
+            // Tambahkan header hasil intercept
             allHeaders.putAll(stream.headers)
 
+            // Force Referer & Origin spesifik provider untuk menembus proteksi CDN
+            if (stream.url.contains("dailymotion.com")) {
+                allHeaders["Referer"] = "https://www.dailymotion.com/"
+                allHeaders["Origin"] = "https://www.dailymotion.com"
+            } else if (stream.url.contains("anichin.stream")) {
+                allHeaders["Referer"] = "https://anichin.cafe/"
+                allHeaders["Origin"] = "https://anichin.cafe"
+            }
+
             val dataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
+                .setUserAgent(mobileUserAgent)
                 .setDefaultRequestProperties(allHeaders)
-                .setConnectTimeoutMs(15000)
-                .setReadTimeoutMs(15000)
+                .setConnectTimeoutMs(20000)
+                .setReadTimeoutMs(20000)
                 .setAllowCrossProtocolRedirects(true)
             
-            val mediaItem = androidx.media3.common.MediaItem.fromUri(stream.url)
+            val cleanUrl = stream.url.trim().replace(" ", "")
+            val mediaItem = androidx.media3.common.MediaItem.Builder()
+                .setUri(cleanUrl)
+                .setMimeType(if (stream.isHls || cleanUrl.contains(".m3u8")) androidx.media3.common.MimeTypes.APPLICATION_M3U8 else null)
+                .build()
             
-            // MediaSource adaptif
-            val mediaSource = if (stream.isHls) {
+            // Gunakan HlsMediaSource secara eksplisit untuk file .m3u8
+            val mediaSource = if (stream.isHls || cleanUrl.contains(".m3u8")) {
                 androidx.media3.exoplayer.hls.HlsMediaSource.Factory(dataSourceFactory)
-                    .setAllowChunklessPreparation(true)
+                    .setAllowChunklessPreparation(false)
                     .createMediaSource(mediaItem)
             } else {
                 androidx.media3.exoplayer.source.ProgressiveMediaSource.Factory(dataSourceFactory)
@@ -145,7 +179,7 @@ fun PlayerScreen(
             exoPlayer.setMediaSource(mediaSource)
             exoPlayer.prepare()
             exoPlayer.play()
-            android.util.Log.d("Player", "Playing Native Pro: ${stream.url}")
+            android.util.Log.d("Player", "Playing Native Pro with Sync: $cleanUrl")
         } else if (uiState.currentSource != null) {
             isDirectVideo = false
             exoPlayer.pause()
@@ -167,26 +201,41 @@ fun PlayerScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-        if (isDirectVideo) {
-            AndroidView(
-                factory = { ctx ->
-                    PlayerView(ctx).apply {
-                        player = exoPlayer
-                        useController = false
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            )
+        if (uiState.isLoading) {
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator(color = Color.White)
+                Spacer(modifier = Modifier.height(8.dp))
+                androidx.compose.material3.Text(
+                    text = "Mengekstrak Stream...",
+                    color = Color.White,
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall
+                )
+            }
         } else {
-            uiState.currentSource?.let { source ->
-                EmbedPlayer(
-                    url = source.url,
+            if (isDirectVideo) {
+                AndroidView(
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
+                            player = exoPlayer
+                            useController = false
+                        }
+                    },
                     modifier = Modifier.fillMaxSize()
                 )
+            } else {
+                uiState.currentSource?.let { source ->
+                    EmbedPlayer(
+                        url = source.url,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
 
-        if (isDirectVideo) {
+        if (isDirectVideo && !uiState.isLoading) {
             GestureControls(
                 onSingleTap = {
                     if (isControllerVisible) isControllerVisible = false else resetTimer()
@@ -255,7 +304,18 @@ fun PlayerScreen(
         }
 
         if (uiState.isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            Column(
+                modifier = Modifier.align(Alignment.Center),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CircularProgressIndicator(color = Color.White)
+                Spacer(modifier = Modifier.height(8.dp))
+                androidx.compose.material3.Text(
+                    text = "Mengekstrak Stream...",
+                    color = Color.White,
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall
+                )
+            }
         }
 
         if (uiState.showEpisodeList) {

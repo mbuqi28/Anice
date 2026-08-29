@@ -68,7 +68,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             
             // Auto-Select server terbaik
             val bestSource = sources.find { it.serverName.contains("Dailymotion", true) } 
-                ?: sources.find { it.serverName.contains("Hardsub", true) }
+                ?: sources.find { it.serverName.contains("Anichin", true) }
                 ?: sources.find { it.serverName.contains("OK.ru", true) }
                 ?: sources.firstOrNull()
 
@@ -80,8 +80,11 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     fun selectSource(source: VideoSource) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(currentSource = source, isLoading = true, videoStream = null)
-            val extracted = scraper.extractDirectLink(source.url)
-            _uiState.value = _uiState.value.copy(videoStream = extracted, isLoading = false)
+            
+            // Menggunakan VideoExtractor baru (Pure HTTP)
+            val stream = com.aku.anice.data.extractor.VideoExtractor.extract(source.url)
+            
+            _uiState.value = _uiState.value.copy(videoStream = stream, isLoading = false)
         }
     }
 

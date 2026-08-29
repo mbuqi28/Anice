@@ -105,13 +105,6 @@ class JsoupScraper {
         if (finalUrl.startsWith("http")) sources.add(VideoSource(name, finalUrl))
     }
 
-    // --- LOGIKA EXTRACTION TINGKAT TINGGI ---
-    private val extractorManager = com.aku.anice.data.extractor.StreamExtractorManager()
-
-    suspend fun extractDirectLink(embedUrl: String) = withContext(Dispatchers.IO) {
-        extractorManager.extract(embedUrl)
-    }
-
     companion object {
         private const val USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     }
