@@ -3,6 +3,7 @@ package com.aku.anice.ui.player
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.aku.anice.data.extractor.VideoStream
 import com.aku.anice.data.local.AppDatabase
 import com.aku.anice.data.local.HistoryEntity
 import com.aku.anice.data.model.Anime
@@ -21,7 +22,7 @@ data class PlayerUiState(
     val currentEpisode: Episode? = null,
     val lastEpisodeUrlFromHistory: String? = null,
     val currentSource: VideoSource? = null,
-    val directUrl: String? = null,
+    val videoStream: VideoStream? = null,
     val sources: List<VideoSource> = emptyList(),
     val isLoading: Boolean = false,
     val isPlaying: Boolean = true,
@@ -78,9 +79,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun selectSource(source: VideoSource) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(currentSource = source, isLoading = true, directUrl = null)
+            _uiState.value = _uiState.value.copy(currentSource = source, isLoading = true, videoStream = null)
             val extracted = scraper.extractDirectLink(source.url)
-            _uiState.value = _uiState.value.copy(directUrl = extracted, isLoading = false)
+            _uiState.value = _uiState.value.copy(videoStream = extracted, isLoading = false)
         }
     }
 

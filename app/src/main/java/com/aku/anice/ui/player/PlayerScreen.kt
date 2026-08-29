@@ -108,40 +108,32 @@ fun PlayerScreen(
     }
 
     // HANDLER PEMUTARAN: Cek apakah link berhasil diekstrak atau harus WebView
-    LaunchedEffect(uiState.directUrl, uiState.currentSource, uiState.isLoading) {
+    LaunchedEffect(uiState.videoStream, uiState.currentSource, uiState.isLoading) {
         if (uiState.isLoading) return@LaunchedEffect
         
-        val urlToPlay = uiState.directUrl
-        if (urlToPlay != null) {
+        val stream = uiState.videoStream
+        if (stream != null) {
             isDirectVideo = true
             
-            // Konfigurasi Header tingkat tinggi untuk menembus Error 403
-            val defaultHeaders = mutableMapOf(
+            // Gabungkan header default dengan header dari extractor
+            val allHeaders = mutableMapOf(
                 "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
                 "Accept" to "*/*",
                 "Accept-Language" to "en-US,en;q=0.9",
                 "Connection" to "keep-alive"
             )
-
-            // Spesifik Referer & Origin untuk server tertentu
-            if (urlToPlay.contains("dailymotion")) {
-                defaultHeaders["Referer"] = "https://geo.dailymotion.com/"
-                defaultHeaders["Origin"] = "https://geo.dailymotion.com"
-            } else if (urlToPlay.contains("ok.ru") || urlToPlay.contains("odnoklassniki")) {
-                defaultHeaders["Referer"] = "https://ok.ru/"
-                defaultHeaders["Origin"] = "https://ok.ru"
-            }
+            allHeaders.putAll(stream.headers)
 
             val dataSourceFactory = androidx.media3.datasource.DefaultHttpDataSource.Factory()
-                .setDefaultRequestProperties(defaultHeaders)
+                .setDefaultRequestProperties(allHeaders)
                 .setConnectTimeoutMs(15000)
                 .setReadTimeoutMs(15000)
                 .setAllowCrossProtocolRedirects(true)
             
-            val mediaItem = androidx.media3.common.MediaItem.fromUri(urlToPlay)
+            val mediaItem = androidx.media3.common.MediaItem.fromUri(stream.url)
             
             // MediaSource adaptif
-            val mediaSource = if (urlToPlay.contains(".m3u8")) {
+            val mediaSource = if (stream.isHls) {
                 androidx.media3.exoplayer.hls.HlsMediaSource.Factory(dataSourceFactory)
                     .setAllowChunklessPreparation(true)
                     .createMediaSource(mediaItem)
@@ -153,7 +145,7 @@ fun PlayerScreen(
             exoPlayer.setMediaSource(mediaSource)
             exoPlayer.prepare()
             exoPlayer.play()
-            android.util.Log.d("Player", "Playing Native Pro: $urlToPlay")
+            android.util.Log.d("Player", "Playing Native Pro: ${stream.url}")
         } else if (uiState.currentSource != null) {
             isDirectVideo = false
             exoPlayer.pause()
