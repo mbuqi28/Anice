@@ -1,5 +1,6 @@
 package com.aku.anice.ui.home
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,8 +20,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -61,38 +65,7 @@ fun HomeScreen(
             .statusBarsPadding()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Modern Header
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column {
-                Text(
-                    text = "Anice",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontSize = 32.sp,
-                    lineHeight = 36.sp
-                )
-                Text(
-                    text = "Donghua Streaming",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray,
-                    fontSize = 10.sp
-                )
-            }
-
-            IconButton(
-                onClick = { viewModel.toggleFilter(true) },
-                modifier = Modifier.background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            ) {
-                Icon(Icons.Default.FilterList, "Filter", tint = MaterialTheme.colorScheme.primary)
-            }
-        }
+        BrandingHeader(onFilterClick = { viewModel.toggleFilter(true) })
 
         // Search Field
         OutlinedTextField(
@@ -158,6 +131,88 @@ fun HomeScreen(
             },
             onDismiss = { viewModel.toggleFilter(false) }
         )
+    }
+}
+
+@Composable
+fun BrandingHeader(onFilterClick: () -> Unit) {
+    val infiniteTransition = rememberInfiniteTransition(label = "branding")
+    
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "logoRotation"
+    )
+
+    val shimmerOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1000f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "shimmerOffset"
+    )
+
+    val shimmerBrush = Brush.linearGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primary,
+            MaterialTheme.colorScheme.secondary,
+            MaterialTheme.colorScheme.primary,
+        ),
+        start = Offset(shimmerOffset, shimmerOffset),
+        end = Offset(shimmerOffset + 200f, shimmerOffset + 200f),
+        tileMode = TileMode.Mirror
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Image(
+                painter = painterResource(id = R.mipmap.ic_launcher),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(48.dp)
+                    .graphicsLayer {
+                        rotationY = rotation
+                        cameraDistance = 12 * density
+                    }
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = "Anice",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        brush = shimmerBrush
+                    ),
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 32.sp,
+                    lineHeight = 36.sp
+                )
+                Text(
+                    text = "Donghua Streaming",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray,
+                    fontSize = 10.sp
+                )
+            }
+        }
+
+        IconButton(
+            onClick = onFilterClick,
+            modifier = Modifier.background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+        ) {
+            Icon(Icons.Default.FilterList, "Filter", tint = MaterialTheme.colorScheme.primary)
+        }
     }
 }
 

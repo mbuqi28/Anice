@@ -32,6 +32,7 @@ android {
     
     buildFeatures {
         compose = true
+        viewBinding = true
     }
 }
 
@@ -53,6 +54,7 @@ dependencies {
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.hls)
     implementation(libs.androidx.media3.session)
+    implementation(libs.androidx.media3.datasource.okhttp)
 
     // Compose
     val composeBom = platform(libs.androidx.compose.bom)
@@ -71,6 +73,8 @@ dependencies {
     implementation(libs.jsoup)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.androidx.webkit)
     implementation(libs.kotlinx.coroutines.android)
 
     // Room Database
