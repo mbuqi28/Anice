@@ -34,9 +34,6 @@ import com.aku.anice.ui.player.PlayerScreen
 import com.aku.anice.ui.player.PlayerViewModel
 import com.aku.anice.ui.theme.AniceTheme
 
-import android.content.Intent
-import com.aku.anice.ui.player.PlayerActivity
-
 enum class Screen { Home, History, Favorite }
 
 class MainActivity : ComponentActivity() {
@@ -52,19 +49,29 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    var selectedEpisode by rememberSaveable { mutableStateOf<Episode?>(null) }
+                    var episodeList by rememberSaveable { mutableStateOf<List<Episode>>(emptyList()) }
+
                     when {
+                        selectedEpisode != null && selectedAnime != null -> {
+                            val playerViewModel: PlayerViewModel = viewModel()
+                            PlayerScreen(
+                                episode = selectedEpisode!!,
+                                allEpisodes = episodeList,
+                                anime = selectedAnime!!,
+                                viewModel = playerViewModel,
+                                onBackPressed = { selectedEpisode = null }
+                            )
+                            BackHandler { selectedEpisode = null }
+                        }
                         selectedAnime != null -> {
                             val detailViewModel: DetailViewModel = viewModel()
                             DetailScreen(
                                 anime = selectedAnime!!,
                                 viewModel = detailViewModel,
-                                onEpisodeClick = { episode, _ ->
-                                    val intent = Intent(this, PlayerActivity::class.java).apply {
-                                        putExtra("EPISODE_URL", episode.url)
-                                        putExtra("EPISODE_TITLE", "Episode ${episode.number}")
-                                        putExtra("ANIME_TITLE", selectedAnime?.title)
-                                    }
-                                    startActivity(intent)
+                                onEpisodeClick = { episode, list ->
+                                    selectedEpisode = episode
+                                    episodeList = list
                                 },
                                 onBackPressed = { selectedAnime = null }
                             )

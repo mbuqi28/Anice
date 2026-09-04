@@ -32,7 +32,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.aku.anice.data.model.Anime
 import com.aku.anice.data.model.Episode
-import com.aku.anice.ui.player.components.EmbedPlayer
 import com.aku.anice.ui.player.components.EpisodeListSheet
 import com.aku.anice.ui.player.components.GestureControls
 import com.aku.anice.ui.player.components.PlayerOverlay
@@ -225,12 +224,18 @@ fun PlayerScreen(
                     },
                     modifier = Modifier.fillMaxSize()
                 )
-            } else {
-                uiState.currentSource?.let { source ->
-                    EmbedPlayer(
-                        url = source.url,
-                        modifier = Modifier.fillMaxSize()
-                    )
+            } else if (uiState.currentSource != null) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Menu, null, tint = Color.Gray, modifier = Modifier.size(48.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
+                        androidx.compose.material3.Text(
+                            text = "Gagal memutar video secara native.\nSilakan coba server lain.",
+                            color = Color.White,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
+                    }
                 }
             }
         }
