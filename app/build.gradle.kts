@@ -32,7 +32,7 @@ android {
     
     buildFeatures {
         compose = true
-        viewBinding = true
+        viewBinding = false
     }
 }
 
@@ -47,7 +47,6 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity.ktx)
-    implementation(libs.androidx.constraintlayout)
 
     // Media3
     implementation(libs.androidx.media3.exoplayer)
@@ -74,7 +73,6 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
     implementation(libs.okhttp)
-    implementation(libs.androidx.webkit)
     implementation(libs.kotlinx.coroutines.android)
 
     // Room Database

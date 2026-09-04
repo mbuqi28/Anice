@@ -106,7 +106,6 @@ fun PlayerScreen(
                 override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
                     android.util.Log.e("Player", "Error: ${error.message}")
                     if (isDirectVideo) {
-                        // Jika native gagal, coba fallback ke Embed/WebView
                         isDirectVideo = false
                         isControllerVisible = true
                     }
@@ -115,7 +114,7 @@ fun PlayerScreen(
         }
     }
 
-    // HANDLER PEMUTARAN: Cek apakah link berhasil diekstrak atau harus WebView
+    // HANDLER PEMUTARAN: Cek apakah link berhasil diekstrak
     LaunchedEffect(uiState.videoStream, uiState.currentSource, uiState.isLoading) {
         if (uiState.isLoading) return@LaunchedEffect
         
@@ -123,7 +122,7 @@ fun PlayerScreen(
         if (stream != null) {
             isDirectVideo = true
             
-            // Konfigurasi Header lengkap (Mobile UA untuk sinkronisasi cookie/platform)
+            // Konfigurasi Header lengkap (Mobile UA)
             val mobileUserAgent = "Mozilla/5.0 (Linux; Android 13; Mobile) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
             
             val allHeaders = mutableMapOf(
@@ -134,7 +133,7 @@ fun PlayerScreen(
                 "sec-ch-ua-platform" to "\"Android\""
             )
             
-            // Tambahkan Cookie dari CookieManager (Sangat penting untuk Dailymotion/OK.ru)
+            // Sync Cookie (Penting untuk provider video)
             val cookie = android.webkit.CookieManager.getInstance().getCookie(stream.url)
             if (!cookie.isNullOrEmpty()) {
                 allHeaders["Cookie"] = cookie
@@ -143,7 +142,7 @@ fun PlayerScreen(
             // Tambahkan header hasil intercept
             allHeaders.putAll(stream.headers)
 
-            // Force Referer & Origin spesifik provider untuk menembus proteksi CDN
+            // Force Referer & Origin spesifik provider
             if (stream.url.contains("dailymotion.com")) {
                 allHeaders["Referer"] = "https://www.dailymotion.com/"
                 allHeaders["Origin"] = "https://www.dailymotion.com"
